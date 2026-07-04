@@ -88,7 +88,7 @@ MultiNet/
 
 ```bash
 # 克隆或上传项目
-git clone https://github.com/yourname/MultiNet.git
+git clone https://github.com/yuanbi/MultiNet.git
 cd MultiNet/MultiNet-Master
 
 # 一键构建并启动
