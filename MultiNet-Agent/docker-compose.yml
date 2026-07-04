@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  multinet-agent:
+    build: .
+    container_name: multinet-agent
+    restart: always
+    cap_add:
+      - NET_RAW        # ping/ping6 原始套接字权限
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0   # 容器内开启 IPv6
+    environment:
+      # ★ 修改为主控服务器公网地址和端口
+      - MASTER_WS=ws://nezha.luoxiyun.top:8101/ws/agent
+      # ★ 自定义本节点显示名称（建议标注城市/运营商）
+      - NODE_NAME=节点1-湖南永州-联通家宽(仅IPV4)
+      - TZ=Asia/Shanghai
+    networks:
+      - agent-net
+
+networks:
+  agent-net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "172.29.0.0/16"
+        - subnet: "fd00:dead:beef:1::/64"
