@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  multinet-master:
+    build: .
+    container_name: multinet-master
+    restart: always
+    ports:
+      - "8101:8000"
+    cap_add:
+      - NET_RAW          # 允许 ping/ping6 原始套接字权限
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0   # 容器内开启 IPv6
+    networks:
+      - multinet
+    environment:
+      - TZ=Asia/Shanghai
+
+networks:
+  multinet:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "172.28.0.0/16"
+        - subnet: "fd00:dead:beef::/48"   # 容器内 IPv6 子网

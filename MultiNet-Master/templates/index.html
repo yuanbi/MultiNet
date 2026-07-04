@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MultiNet · 多节点网络探测平台</title>
+<style>
+/* ── 全局变量 & 重置 ── */
+:root {
+  --bg:        #f5f6fa;
+  --surface:   #ffffff;
+  --border:    #e8eaf0;
+  --accent:    #6c8ef5;
+  --accent-h:  #556de0;
+  --text:      #2d3348;
+  --sub:       #8890a8;
+  --success:   #52c09a;
+  --danger:    #f07070;
+  --warn:      #f5a623;
+  --radius:    14px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(108,142,245,.08);
+  --ease:      cubic-bezier(.4,0,.2,1);
+  --dur:       260ms;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter','PingFang SC','Segoe UI',system-ui,sans-serif;
+  min-height:100vh;
+  padding:24px 16px 48px;
+}
+
+/* ── 顶部 HEADER ── */
+.header{
+  text-align:center;
+  margin-bottom:28px;
+}
+.header h1{
+  font-size:1.65rem;
+  font-weight:700;
+  letter-spacing:-.5px;
+  background:linear-gradient(130deg,var(--accent),#a78bfa);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header p{
+  color:var(--sub);
+  font-size:.875rem;
+  margin-top:6px;
+}
+
+/* ── 主容器 ── */
+.container{
+  max-width:860px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+/* ── 卡片 ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px 24px;
+}
+
+/* ── Tab 导航 ── */
+.tabs-nav{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+  padding-bottom:14px;
+  margin-bottom:20px;
+}
+.tab-btn{
+  padding:7px 18px;
+  border:1.5px solid var(--border);
+  border-radius:999px;
+  background:transparent;
+  color:var(--sub);
+  font-size:.85rem;
+  font-weight:500;
+  cursor:pointer;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+.tab-btn:hover{
+  background:rgba(108,142,245,.07);
+  border-color:var(--accent);
+  color:var(--accent);
+  transform:scale(1.03);
+}
+.tab-btn.active{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
+/* ── Tab 面板 淡入淡出 ── */
+.tab-panel{
+  display:none;
+  opacity:0;
+  transform:translateY(6px);
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+.tab-panel.active{
+  display:block;
+  animation:fadeIn var(--dur) var(--ease) forwards;
+}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(6px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+
+/* ── 表单元素 ── */
+.form-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:14px;
+  align-items:flex-end;
+}
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  flex:1;
+  min-width:160px;
+}
+.form-group label{
+  font-size:.8rem;
+  color:var(--sub);
+  font-weight:500;
+}
+.form-group input{
+  height:38px;
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:0 12px;
+  font-size:.875rem;
+  color:var(--text);
+  background:var(--bg);
+  outline:none;
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform 180ms var(--ease);
+}
+.form-group input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(108,142,245,.15);
+  transform:translateY(-1px);
+}
+
+/* ── IP 版本单选组 ── */
+.ip-ver-group{
+  display:flex;
+  gap:10px;
+  margin-bottom:14px;
+}
+.ip-ver-label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+  font-size:.85rem;
+  font-weight:500;
+  color:var(--sub);
+  transition:color var(--dur) var(--ease);
+}
+.ip-ver-label input[type=radio]{display:none}
+.ip-ver-label .radio-dot{
+  width:16px;height:16px;
+  border:2px solid var(--border);
+  border-radius:50%;
+  background:#fff;
+  position:relative;
+  transition:
+    border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+.ip-ver-label input[type=radio]:checked ~ .radio-dot{
+  border-color:var(--accent);
+  background:var(--accent);
+}
+.ip-ver-label input[type=radio]:checked ~ .radio-dot::after{
+  content:'';
+  position:absolute;
+  inset:3px;
+  background:#fff;
+  border-radius:50%;
+}
+.ip-ver-label input[type=radio]:checked ~ span{color:var(--accent)}
+
+/* ── 节点列表 ── */
+.nodes-section{}
+.nodes-title{
+  font-size:.8rem;
+  color:var(--sub);
+  font-weight:500;
+  margin-bottom:8px;
+}
+.nodes-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  min-height:36px;
+}
+.node-chip{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 14px;
+  border:1.5px solid var(--border);
+  border-radius:999px;
+  cursor:pointer;
+  font-size:.82rem;
+  font-weight:500;
+  color:var(--sub);
+  background:var(--bg);
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    transform 180ms var(--ease);
+  user-select:none;
+}
+.node-chip:hover{transform:scale(1.04);border-color:var(--accent);color:var(--accent)}
+.node-chip.selected{
+  background:rgba(108,142,245,.1);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.node-chip .dot{
+  width:7px;height:7px;
+  border-radius:50%;
+  background:var(--success);
+  flex-shrink:0;
+}
+.node-chip.local-chip .dot{background:var(--warn)}
+.nodes-empty{
+  color:var(--sub);
+  font-size:.82rem;
+  padding:8px 0;
+}
+
+/* ── 复选框 ── */
+.checkbox-label{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  cursor:pointer;
+  font-size:.85rem;
+  color:var(--sub);
+  user-select:none;
+}
+.checkbox-label input[type=checkbox]{display:none}
+.checkbox-box{
+  width:17px;height:17px;
+  border:2px solid var(--border);
+  border-radius:4px;
+  background:#fff;
+  position:relative;
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+  flex-shrink:0;
+}
+.checkbox-label input[type=checkbox]:checked ~ .checkbox-box{
+  background:var(--accent);
+  border-color:var(--accent);
+}
+.checkbox-label input[type=checkbox]:checked ~ .checkbox-box::after{
+  content:'';
+  position:absolute;
+  left:3px;top:1px;
+  width:7px;height:10px;
+  border:2px solid #fff;
+  border-top:none;border-left:none;
+  transform:rotate(45deg);
+}
+
+/* ── 提交按钮 ── */
+.btn-submit{
+  height:40px;
+  padding:0 28px;
+  border:none;
+  border-radius:var(--radius-sm);
+  background:var(--accent);
+  color:#fff;
+  font-size:.9rem;
+  font-weight:600;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  transition:
+    background var(--dur) var(--ease),
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.btn-submit:hover:not(:disabled){
+  background:var(--accent-h);
+  transform:scale(1.03);
+  box-shadow:0 4px 16px rgba(108,142,245,.3);
+}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+.spinner{
+  width:16px;height:16px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  display:none;
+}
+.btn-submit.loading .spinner{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── 结果区域 ── */
+.result-section{
+  margin-top:20px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+.result-section.show{
+  opacity:1;
+  transform:translateY(0);
+}
+.result-title{
+  font-size:.8rem;
+  color:var(--sub);
+  font-weight:500;
+  margin-bottom:8px;
+}
+.result-box{
+  background:#f8f9fc;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+  font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+  font-size:.8rem;
+  line-height:1.65;
+  white-space:pre-wrap;
+  word-break:break-all;
+  max-height:420px;
+  overflow-y:auto;
+  color:var(--text);
+}
+.result-block{
+  border-bottom:1px solid var(--border);
+  padding-bottom:10px;
+  margin-bottom:10px;
+}
+.result-block:last-child{border-bottom:none;padding-bottom:0;margin-bottom:0}
+.node-tag{
+  display:inline-block;
+  padding:1px 8px;
+  border-radius:4px;
+  background:rgba(108,142,245,.1);
+  color:var(--accent);
+  font-size:.75rem;
+  font-weight:600;
+  margin-bottom:6px;
+}
+.node-tag.v6-tag{background:rgba(167,139,250,.15);color:#8b5cf6}
+.text-err{color:var(--danger)}
+
+/* ── 结构化 Ping 结果 ── */
+.ping-summary{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.ping-stat{
+  background:#f0f4ff;
+  border:1px solid #dde4fb;
+  border-radius:var(--radius-sm);
+  padding:6px 14px;
+  font-size:.82rem;
+  font-weight:600;
+  color:var(--accent);
+  flex:1;
+  min-width:100px;
+  text-align:center;
+}
+.ping-stat .label{
+  font-size:.7rem;
+  font-weight:400;
+  color:var(--sub);
+  display:block;
+  margin-bottom:2px;
+}
+.ping-stat.loss-warn{background:#fff3f3;border-color:#fbd0d0;color:var(--danger)}
+.ping-rows{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.ping-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:5px 10px;
+  border-radius:6px;
+  background:#f8f9fc;
+  font-size:.8rem;
+  font-family:'JetBrains Mono','Cascadia Code',monospace;
+}
+.ping-row.ok{border-left:3px solid var(--success)}
+.ping-row.fail{border-left:3px solid var(--danger);color:var(--danger)}
+.ping-row .seq{color:var(--sub);width:28px;flex-shrink:0;font-size:.75rem}
+.ping-row .ttl{color:var(--sub);font-size:.75rem}
+.latency-badge{
+  margin-left:auto;
+  padding:2px 9px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:.78rem;
+}
+.lat-fast{background:#e6f9f2;color:#27a77a}
+.lat-mid {background:#fff8e6;color:#d4860a}
+.lat-slow{background:#fff0f0;color:var(--danger)}
+
+/* ── 持续 Ping 图表 ── */
+.cont-ping-wrap{
+  margin-top:16px;
+  background:#f8f9fc;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px 16px 10px;
+}
+.cont-ping-stats{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+  align-items:center;
+}
+.cont-stat{
+  font-size:.8rem;
+  font-weight:600;
+  color:var(--text);
+}
+.cont-stat span{
+  color:var(--sub);
+  font-weight:400;
+  margin-right:3px;
+}
+.cont-stat.live-ms{
+  font-size:1.1rem;
+  font-weight:700;
+  color:var(--accent);
+  margin-right:4px;
+}
+.cont-stat.live-ms.err{color:var(--danger)}
+.cont-ping-chart{
+  width:100%;
+  height:80px;
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  overflow:hidden;
+  position:relative;
+}
+.cont-bar{
+  flex-shrink:0;
+  width:8px;
+  border-radius:3px 3px 0 0;
+  transition:height .18s var(--ease);
+  cursor:default;
+  position:relative;
+}
+.cont-bar.ok  {background:var(--success)}
+.cont-bar.loss{background:var(--danger);height:100%!important;opacity:.7}
+.cont-bar:hover::after{
+  content:attr(data-tip);
+  position:absolute;
+  bottom:calc(100% + 4px);
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(45,51,72,.85);
+  color:#fff;
+  font-size:.7rem;
+  padding:2px 7px;
+  border-radius:4px;
+  white-space:nowrap;
+  pointer-events:none;
+  z-index:10;
+}
+.cont-ping-label{
+  font-size:.7rem;
+  color:var(--sub);
+  margin-top:4px;
+  text-align:right;
+}
+.btn-stop{
+  height:40px;
+  padding:0 20px;
+  border:1.5px solid var(--danger);
+  border-radius:var(--radius-sm);
+  background:transparent;
+  color:var(--danger);
+  font-size:.88rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:background var(--dur) var(--ease),color var(--dur) var(--ease);
+  display:none;
+}
+.btn-stop:hover{background:var(--danger);color:#fff}
+.btn-stop.show{display:inline-flex;align-items:center;gap:6px}
+
+/* ── 结构化 TCPing 结果 ── */
+.tcp-rows{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.tcp-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:5px 10px;
+  border-radius:6px;
+  background:#f8f9fc;
+  font-size:.8rem;
+  font-family:'JetBrains Mono','Cascadia Code',monospace;
+}
+.tcp-row.ok{border-left:3px solid var(--success)}
+.tcp-row.fail{border-left:3px solid var(--danger)}
+.tcp-row .seq{color:var(--sub);width:28px;flex-shrink:0;font-size:.75rem}
+.tcp-status{
+  font-size:.74rem;
+  font-weight:600;
+  padding:1px 7px;
+  border-radius:999px;
+}
+.tcp-status.open{background:#e6f9f2;color:#27a77a}
+.tcp-status.fail{background:#fff0f0;color:var(--danger)}
+
+/* ── 结构化 HTTP 测速结果 ── */
+.http-stages{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.http-stage-row{display:flex;align-items:center;gap:10px;font-size:.82rem}
+.stage-name{
+  width:80px;
+  flex-shrink:0;
+  color:var(--sub);
+  font-size:.78rem;
+}
+.stage-bar-wrap{
+  flex:1;
+  height:10px;
+  background:#eef0f7;
+  border-radius:999px;
+  overflow:hidden;
+}
+.stage-bar{
+  height:100%;
+  border-radius:999px;
+  transition:width .5s var(--ease);
+  min-width:4px;
+}
+.bar-dns {background:#7ec8e3}
+.bar-tcp {background:#6c8ef5}
+.bar-tls {background:#a78bfa}
+.bar-ttfb{background:#f5a623}
+.bar-total{background:#52c09a}
+.stage-val{
+  width:70px;
+  text-align:right;
+  font-weight:600;
+  font-size:.8rem;
+  font-family:'JetBrains Mono','Cascadia Code',monospace;
+  flex-shrink:0;
+}
+.http-code-badge{
+  display:inline-block;
+  padding:2px 10px;
+  border-radius:999px;
+  font-size:.78rem;
+  font-weight:700;
+  margin-bottom:8px;
+}
+.code-ok {background:#e6f9f2;color:#27a77a}
+.code-err{background:#fff0f0;color:var(--danger)}
+.code-rdr{background:#fff8e6;color:#d4860a}
+
+/* ── IP 查询卡片 ── */
+.ip-result-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+.ip-kv{
+  background:#f8f9fc;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:10px 14px;
+}
+.ip-kv .k{font-size:.72rem;color:var(--sub);margin-bottom:3px}
+.ip-kv .v{font-size:.9rem;font-weight:600;color:var(--text);word-break:break-all}
+
+/* ── 响应式 ── */
+@media(max-width:600px){
+  .card{padding:16px 14px}
+  .form-row{flex-direction:column}
+  .form-group{min-width:100%}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>MultiNet</h1>
+  <p>多节点综合网络探测平台 · IPv4 / IPv6 双栈支持</p>
+</div>
+
+<div class="container">
+
+  <!-- ══ 功能 Tab 卡片 ══ -->
+  <div class="card">
+    <!-- Tab 导航 -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="ping">Ping 延迟</button>
+      <button class="tab-btn" data-tab="tcping">TCPing 端口</button>
+      <button class="tab-btn" data-tab="http">网站测速</button>
+      <button class="tab-btn" data-tab="ipquery">IP 归属</button>
+    </div>
+
+    <!-- ── Tab1: Ping ── -->
+    <div class="tab-panel active" id="tab-ping">
+      <div class="ip-ver-group">
+        <label class="ip-ver-label">
+          <input type="radio" name="ping-ver" value="4" checked />
+          <span class="radio-dot"></span>
+          <span>IPv4 Ping</span>
+        </label>
+        <label class="ip-ver-label">
+          <input type="radio" name="ping-ver" value="6" />
+          <span class="radio-dot"></span>
+          <span>IPv6 Ping</span>
+        </label>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>域名 / IP 地址</label>
+          <input type="text" id="ping-target" placeholder="例：google.com 或 2001:4860:4860::8888" />
+        </div>
+        <div class="form-group" style="flex:0 0 100px">
+          <label>发包数量</label>
+          <input type="number" id="ping-count" value="4" min="1" max="20" />
+        </div>
+      </div>
+      <div class="nodes-section">
+        <div class="nodes-title">选择探测节点（可多选）</div>
+        <div class="nodes-list" id="ping-nodes"></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn-submit" id="ping-btn" onclick="submitPing()">
+          <span class="spinner"></span>Ping 一次
+        </button>
+        <button class="btn-submit" id="cont-ping-btn" onclick="startContPing()" style="background:var(--success)">
+          <span class="spinner"></span>持续 Ping
+        </button>
+        <button class="btn-stop" id="cont-stop-btn" onclick="stopContPing()">■ 停止</button>
+      </div>
+
+      <!-- 持续 Ping 实时图表 -->
+      <div class="cont-ping-wrap" id="cont-ping-wrap" style="display:none">
+        <div class="cont-ping-stats">
+          <div class="cont-stat live-ms" id="cont-live-ms">-- ms</div>
+          <div class="cont-stat"><span>最低</span><span id="cont-min">--</span> ms</div>
+          <div class="cont-stat"><span>平均</span><span id="cont-avg">--</span> ms</div>
+          <div class="cont-stat"><span>最高</span><span id="cont-max">--</span> ms</div>
+          <div class="cont-stat"><span>丢包</span><span id="cont-loss" style="color:var(--danger)">0</span>%</div>
+          <div class="cont-stat" style="margin-left:auto;color:var(--sub);font-weight:400;font-size:.75rem" id="cont-seq">第 0 包</div>
+        </div>
+        <div class="cont-ping-chart" id="cont-chart"></div>
+        <div class="cont-ping-label">← 最近 80 包实时滚动</div>
+      </div>
+
+      <div class="result-section" id="ping-result">
+        <div class="result-title">单次测试结果</div>
+        <div class="result-box" id="ping-output"></div>
+      </div>
+    </div>
+
+    <!-- ── Tab2: TCPing ── -->
+    <div class="tab-panel" id="tab-tcping">
+      <div class="ip-ver-group">
+        <label class="ip-ver-label">
+          <input type="radio" name="tcp-ver" value="4" checked />
+          <span class="radio-dot"></span>
+          <span>IPv4 TCPing</span>
+        </label>
+        <label class="ip-ver-label">
+          <input type="radio" name="tcp-ver" value="6" />
+          <span class="radio-dot"></span>
+          <span>IPv6 TCPing</span>
+        </label>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>域名 / IP 地址</label>
+          <input type="text" id="tcp-target" placeholder="例：example.com 或 [2606:4700::6810]" />
+        </div>
+        <div class="form-group" style="flex:0 0 90px">
+          <label>端口</label>
+          <input type="number" id="tcp-port" value="80" min="1" max="65535" />
+        </div>
+        <div class="form-group" style="flex:0 0 90px">
+          <label>次数</label>
+          <input type="number" id="tcp-count" value="4" min="1" max="20" />
+        </div>
+      </div>
+      <div class="nodes-section">
+        <div class="nodes-title">选择探测节点（可多选）</div>
+        <div class="nodes-list" id="tcp-nodes"></div>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn-submit" id="tcp-btn" onclick="submitTcping()">
+          <span class="spinner"></span>开始 TCPing
+        </button>
+      </div>
+      <div class="result-section" id="tcp-result">
+        <div class="result-title">测试结果</div>
+        <div class="result-box" id="tcp-output"></div>
+      </div>
+    </div>
+
+    <!-- ── Tab3: HTTP 测速 ── -->
+    <div class="tab-panel" id="tab-http">
+      <div class="ip-ver-group">
+        <label class="ip-ver-label">
+          <input type="radio" name="http-ver" value="4" checked />
+          <span class="radio-dot"></span>
+          <span>IPv4 访问</span>
+        </label>
+        <label class="ip-ver-label">
+          <input type="radio" name="http-ver" value="6" />
+          <span class="radio-dot"></span>
+          <span>IPv6 访问</span>
+        </label>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>完整 URL（含 http:// 或 https://）</label>
+          <input type="text" id="http-url" placeholder="例：https://www.google.com" />
+        </div>
+      </div>
+      <div class="nodes-section">
+        <div class="nodes-title">选择探测节点（可多选）</div>
+        <div class="nodes-list" id="http-nodes"></div>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn-submit" id="http-btn" onclick="submitHttp()">
+          <span class="spinner"></span>开始测速
+        </button>
+      </div>
+      <div class="result-section" id="http-result">
+        <div class="result-title">测试结果</div>
+        <div class="result-box" id="http-output"></div>
+      </div>
+    </div>
+
+    <!-- ── Tab4: IP 归属查询 ── -->
+    <div class="tab-panel" id="tab-ipquery">
+      <div class="form-row">
+        <div class="form-group">
+          <label>IP 地址（自动识别 IPv4 / IPv6）</label>
+          <input type="text" id="ip-target" placeholder="例：8.8.8.8 或 2001:4860:4860::8888" />
+        </div>
+        <div style="align-self:flex-end">
+          <button class="btn-submit" id="ip-btn" onclick="submitIpQuery()">
+            <span class="spinner"></span>查询归属
+          </button>
+        </div>
+      </div>
+      <div class="result-section" id="ip-result">
+        <div class="result-title">查询结果</div>
+        <div id="ip-output"></div>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════════════════
+// 全局状态
+// ════════════════════════════════════════════
+const API = '';          // 主控 API 根路径（同源，留空即可）
+let onlineNodes = [];    // [{id, name}, ...]
+
+// ════════════════════════════════════════════
+// Tab 切换逻辑（淡入淡出过渡）
+// ════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
+    btn.classList.add('active');
+    const panel = document.getElementById('tab-' + btn.dataset.tab);
+    panel.style.display = 'block';
+    // 触发动画（需先 display:block 再加 active）
+    requestAnimationFrame(() => panel.classList.add('active'));
+  });
+});
+
+// ════════════════════════════════════════════
+// 节点列表：每 3 秒轮询刷新
+// ════════════════════════════════════════════
+const nodeContainers = ['ping-nodes', 'tcp-nodes', 'http-nodes'];
+
+function renderNodes(containerId, tabId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  // 收集当前已选中的节点 ID
+  const selected = new Set(
+    [...el.querySelectorAll('.node-chip.selected')].map(c => c.dataset.id)
+  );
+
+  el.innerHTML = '';
+
+  // 内置「主控本机」节点
+  const localChip = makeNodeChip('local', '主控本机', true);
+  if (selected.has('local')) localChip.classList.add('selected');
+  el.appendChild(localChip);
+
+  if (onlineNodes.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'nodes-empty';
+    empty.textContent = '暂无在线远程节点';
+    el.appendChild(empty);
+  } else {
+    onlineNodes.forEach(n => {
+      const chip = makeNodeChip(n.id, n.name, false);
+      if (selected.has(n.id)) chip.classList.add('selected');
+      el.appendChild(chip);
+    });
+  }
+}
+
+function makeNodeChip(id, name, isLocal) {
+  const chip = document.createElement('div');
+  chip.className = 'node-chip' + (isLocal ? ' local-chip' : '');
+  chip.dataset.id = id;
+  chip.innerHTML = `<span class="dot"></span>${name}`;
+  chip.addEventListener('click', () => chip.classList.toggle('selected'));
+  return chip;
+}
+
+function getSelectedNodes(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .node-chip.selected`)]
+    .map(c => c.dataset.id);
+}
+
+async function fetchNodes() {
+  try {
+    const res = await fetch(API + '/api/nodes');
+    const data = await res.json();
+    onlineNodes = data.data || [];
+  } catch (_) {
+    onlineNodes = [];
+  }
+  nodeContainers.forEach((cid, i) => renderNodes(cid, ['ping','tcp','http'][i]));
+}
+
+fetchNodes();
+setInterval(fetchNodes, 3000);
+
+// ════════════════════════════════════════════
+// 工具函数：按钮加载态切换
+// ════════════════════════════════════════════
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  if (on) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  } else {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function showResult(sectionId) {
+  const el = document.getElementById(sectionId);
+  el.classList.add('show');
+}
+
+// ════════════════════════════════════════════
+// 持续 Ping 状态
+// ════════════════════════════════════════════
+let contPingTimer  = null;   // setInterval 句柄
+let contPingSeq    = 0;
+let contPingData   = [];     // {ms, ok}[]  最多保留 80 条
+const CONT_MAX     = 80;     // 图表最大显示包数
+const CONT_CHART_H = 72;     // 图表有效高度 px（留 8px 底边）
+
+function startContPing() {
+  const target = document.getElementById('ping-target').value.trim();
+  if (!target) { alert('请先填写目标域名或 IP'); return; }
+
+  const ids = getSelectedNodes('ping-nodes');
+  if (ids.length === 0) { alert('请至少选择一个探测节点'); return; }
+
+  // 只取第一个节点做持续 Ping（多节点持续会很乱）
+  const nodeId = ids[0];
+
+  // 重置状态
+  contPingSeq  = 0;
+  contPingData = [];
+  document.getElementById('cont-chart').innerHTML = '';
+  document.getElementById('cont-live-ms').textContent = '-- ms';
+  ['cont-min','cont-avg','cont-max'].forEach(id =>
+    document.getElementById(id).textContent = '--');
+  document.getElementById('cont-loss').textContent = '0';
+  document.getElementById('cont-seq').textContent  = '第 0 包';
+
+  // 显示图表区 & 停止按钮
+  document.getElementById('cont-ping-wrap').style.display = 'block';
+  document.getElementById('cont-stop-btn').classList.add('show');
+  document.getElementById('cont-ping-btn').disabled = true;
+
+  const ipVer = parseInt(document.querySelector('input[name="ping-ver"]:checked').value);
+
+  async function doOnePing() {
+    contPingSeq++;
+    document.getElementById('cont-seq').textContent = `第 ${contPingSeq} 包`;
+
+    let ms = null;
+    try {
+      const payload = { task_type: 'ping', target, count: 1, ip_version: ipVer };
+      const endpoint = nodeId === 'local' ? '/api/local/probe' : '/api/probe';
+      const body = nodeId === 'local'
+        ? payload
+        : { ...payload, node_ids: [nodeId] };
+
+      const res  = await fetch(API + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const output = (data.results?.[0]?.output) || '';
+
+      // 解析单包延迟
+      const m = output.match(/time[=<]([\d.]+)\s*ms/i)
+             || output.match(/时间[=<]([\d.]+)ms/i);
+      if (m) ms = parseFloat(m[1]);
+    } catch (_) {}
+
+    const ok = ms !== null;
+    contPingData.push({ ms, ok });
+    if (contPingData.length > CONT_MAX) contPingData.shift();
+
+    updateContChart(ms, ok);
+    updateContStats();
+  }
+
+  doOnePing();
+  contPingTimer = setInterval(doOnePing, 1000);
+}
+
+function stopContPing() {
+  if (contPingTimer) { clearInterval(contPingTimer); contPingTimer = null; }
+  document.getElementById('cont-stop-btn').classList.remove('show');
+  document.getElementById('cont-ping-btn').disabled = false;
+}
+
+// ── 更新图表：追加一根柱子 ──
+function updateContChart(ms, ok) {
+  const chart = document.getElementById('cont-chart');
+
+  // 限制柱子数量（DOM 裁剪）
+  while (chart.children.length >= CONT_MAX) {
+    chart.removeChild(chart.firstChild);
+  }
+
+  const bar = document.createElement('div');
+  bar.className = 'cont-bar ' + (ok ? 'ok' : 'loss');
+
+  if (ok) {
+    // 延迟 -> 高度：参考最大值动态计算，最低 6px 最高 CONT_CHART_H px
+    const allMs = contPingData.filter(d => d.ok).map(d => d.ms);
+    const maxMs = Math.max(...allMs, 1);
+    const h = Math.max(6, Math.round((ms / maxMs) * CONT_CHART_H));
+    bar.style.height = h + 'px';
+    bar.dataset.tip = ms.toFixed(1) + ' ms';
+
+    // 动态刷新所有柱子高度（maxMs 变化时重新比例）
+    refreshBarHeights(chart, maxMs);
+  } else {
+    bar.style.height = CONT_CHART_H + 'px';
+    bar.dataset.tip = '超时';
+  }
+
+  chart.appendChild(bar);
+
+  // 实时当前延迟大字
+  const liveEl = document.getElementById('cont-live-ms');
+  if (ok) {
+    liveEl.textContent = ms.toFixed(1) + ' ms';
+    liveEl.className = 'cont-stat live-ms';
+  } else {
+    liveEl.textContent = '超时';
+    liveEl.className = 'cont-stat live-ms err';
+  }
+}
+
+function refreshBarHeights(chart, maxMs) {
+  [...chart.children].forEach(bar => {
+    if (!bar.classList.contains('loss') && bar.dataset.tip) {
+      const barMs = parseFloat(bar.dataset.tip);
+      if (!isNaN(barMs)) {
+        const h = Math.max(6, Math.round((barMs / maxMs) * CONT_CHART_H));
+        bar.style.height = h + 'px';
+      }
+    }
+  });
+}
+
+// ── 更新统计摘要 ──
+function updateContStats() {
+  const all  = contPingData;
+  const ok   = all.filter(d => d.ok);
+  const msList = ok.map(d => d.ms);
+  const loss = all.length
+    ? (((all.length - ok.length) / all.length) * 100).toFixed(0) : 0;
+
+  document.getElementById('cont-loss').textContent = loss;
+  if (msList.length) {
+    document.getElementById('cont-min').textContent =
+      Math.min(...msList).toFixed(1);
+    document.getElementById('cont-avg').textContent =
+      (msList.reduce((a,b) => a+b, 0) / msList.length).toFixed(1);
+    document.getElementById('cont-max').textContent =
+      Math.max(...msList).toFixed(1);
+  }
+}
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function nodeTag(name, ipVer) {
+  const cls = ipVer===6 ? 'node-tag v6-tag' : 'node-tag';
+  const ver = ipVer===6 ? 'IPv6' : 'IPv4';
+  return `<div class="${cls}">${escHtml(name)} · ${ver}</div>`;
+}
+
+// ════════════════════════════════════════════
+// Ping 解析 & 渲染
+// ════════════════════════════════════════════
+function parsePing(raw) {
+  const rows = [];
+  // 逐行匹配 icmp_seq / icmp6_seq 或 超时
+  const lineRe = /icmp[_6]*seq=(\d+).*?ttl=(\d+).*?time=([\d.]+)\s*ms/i;
+  const timeoutRe = /(?:request timeout|no answer|100% packet loss|unreachable)/i;
+  raw.split('\n').forEach(line => {
+    const m = line.match(lineRe);
+    if (m) {
+      rows.push({ seq: m[1], ttl: m[2], ms: parseFloat(m[3]), ok: true });
+      return;
+    }
+    // Windows ping 格式: 来自 ... 的回复: 字节=32 时间=5ms TTL=128
+    const mw = line.match(/时间[=<]([\d.]+)ms.*?TTL=(\d+)/i)
+            || line.match(/time[=<]([\d.]+)ms.*?ttl=(\d+)/i);
+    if (mw) {
+      const seqM = line.match(/序列.(\d+)|seq=(\d+)/i);
+      rows.push({ seq: seqM ? (seqM[1]||seqM[2]) : rows.length+1, ttl: mw[2], ms: parseFloat(mw[1]), ok: true });
+      return;
+    }
+    if (/request.timeout|no route|unreachable|100%/i.test(line)) {
+      rows.push({ seq: rows.length+1, ok: false });
+    }
+  });
+
+  // 统计摘要
+  const sent = Math.max(rows.length, 1);
+  const ok   = rows.filter(r => r.ok);
+  const loss = (((sent - ok.length) / sent) * 100).toFixed(0);
+  const msList = ok.map(r => r.ms);
+  const avg = msList.length ? (msList.reduce((a,b)=>a+b,0)/msList.length).toFixed(1) : '--';
+  const min = msList.length ? Math.min(...msList).toFixed(1) : '--';
+  const max = msList.length ? Math.max(...msList).toFixed(1) : '--';
+  return { rows, loss: parseInt(loss), avg, min, max };
+}
+
+function latClass(ms) {
+  if (ms < 50)  return 'lat-fast';
+  if (ms < 150) return 'lat-mid';
+  return 'lat-slow';
+}
+
+function renderPingResult(outputId, results, ipVer) {
+  const el = document.getElementById(outputId);
+  el.innerHTML = '';
+  results.forEach(r => {
+    const block = document.createElement('div');
+    block.className = 'result-block';
+    if (r.error || /^ERROR/.test(r.output||'')) {
+      block.innerHTML = nodeTag(r.node_name, ipVer) +
+        `<div class="text-err" style="font-size:.83rem;padding:4px 0">${escHtml(r.output)}</div>`;
+      el.appendChild(block); return;
+    }
+    const p = parsePing(r.output || '');
+    const lossWarn = p.loss > 0 ? ' loss-warn' : '';
+    let html = nodeTag(r.node_name, ipVer);
+    html += `<div class="ping-summary">
+      <div class="ping-stat"><span class="label">最低延迟</span>${p.min} ms</div>
+      <div class="ping-stat"><span class="label">平均延迟</span>${p.avg} ms</div>
+      <div class="ping-stat"><span class="label">最高延迟</span>${p.max} ms</div>
+      <div class="ping-stat${lossWarn}"><span class="label">丢包率</span>${p.loss}%</div>
+    </div>`;
+    if (p.rows.length > 0) {
+      html += '<div class="ping-rows">';
+      p.rows.forEach(row => {
+        if (row.ok) {
+          const lc = latClass(row.ms);
+          html += `<div class="ping-row ok">
+            <span class="seq">#${row.seq}</span>
+            <span>TTL <span class="ttl">${row.ttl}</span></span>
+            <span class="latency-badge ${lc}">${row.ms} ms</span>
+          </div>`;
+        } else {
+          html += `<div class="ping-row fail">
+            <span class="seq">#${row.seq}</span>
+            <span>超时 / 不可达</span>
+          </div>`;
+        }
+      });
+      html += '</div>';
+    } else {
+      // 无法解析时回退显示原始内容
+      html += `<pre style="font-size:.78rem;color:var(--sub);margin-top:6px">${escHtml(r.output)}</pre>`;
+    }
+    block.innerHTML = html;
+    el.appendChild(block);
+  });
+}
+
+// ════════════════════════════════════════════
+// TCPing 解析 & 渲染
+// ════════════════════════════════════════════
+function parseTcpRows(raw) {
+  const rows = [];
+  raw.split('\n').forEach(line => {
+    const mSeq = line.match(/\[(\d+)\]/);
+    const seq = mSeq ? mSeq[1] : rows.length+1;
+    const mMs = line.match(/tcp_ms=([\d.]+)/);
+    const mCode = line.match(/connected=(\d+)/);
+    const isErr = /ERROR|timeout|refused|curl.*\(7\)/i.test(line);
+    if (mMs) {
+      const ms = parseFloat(mMs[1]);
+      const code = mCode ? mCode[1] : '0';
+      rows.push({ seq, ms, code, ok: !isErr && ms > 0 });
+    } else if (isErr || line.trim()) {
+      if (mSeq) rows.push({ seq, ok: false, raw: line.trim() });
+    }
+  });
+  return rows;
+}
+
+function renderTcpingResult(outputId, results, ipVer) {
+  const el = document.getElementById(outputId);
+  el.innerHTML = '';
+  results.forEach(r => {
+    const block = document.createElement('div');
+    block.className = 'result-block';
+    if (r.error || /^ERROR/.test(r.output||'')) {
+      block.innerHTML = nodeTag(r.node_name, ipVer) +
+        `<div class="text-err" style="font-size:.83rem;padding:4px 0">${escHtml(r.output)}</div>`;
+      el.appendChild(block); return;
+    }
+    const rows = parseTcpRows(r.output || '');
+    const ok = rows.filter(x=>x.ok);
+    const avgMs = ok.length
+      ? (ok.reduce((a,b)=>a+b.ms,0)/ok.length).toFixed(1) : '--';
+    const loss = rows.length
+      ? (((rows.length-ok.length)/rows.length)*100).toFixed(0) : '--';
+
+    let html = nodeTag(r.node_name, ipVer);
+    html += `<div class="ping-summary">
+      <div class="ping-stat"><span class="label">平均握手</span>${avgMs} ms</div>
+      <div class="ping-stat${parseInt(loss)>0?' loss-warn':''}"><span class="label">失败率</span>${loss}%</div>
+      <div class="ping-stat"><span class="label">成功次数</span>${ok.length} / ${rows.length}</div>
+    </div>`;
+
+    if (rows.length > 0) {
+      html += '<div class="tcp-rows">';
+      rows.forEach(row => {
+        if (row.ok) {
+          const lc = latClass(row.ms);
+          html += `<div class="tcp-row ok">
+            <span class="seq">#${row.seq}</span>
+            <span class="tcp-status open">OPEN</span>
+            <span class="latency-badge ${lc}" style="margin-left:auto">${row.ms} ms</span>
+          </div>`;
+        } else {
+          html += `<div class="tcp-row fail">
+            <span class="seq">#${row.seq}</span>
+            <span class="tcp-status fail">FAIL</span>
+            <span style="font-size:.75rem;color:var(--sub);margin-left:auto">${escHtml((row.raw||'').slice(0,60))}</span>
+          </div>`;
+        }
+      });
+      html += '</div>';
+    } else {
+      html += `<pre style="font-size:.78rem;color:var(--sub);margin-top:6px">${escHtml(r.output)}</pre>`;
+    }
+    block.innerHTML = html;
+    el.appendChild(block);
+  });
+}
+
+// ════════════════════════════════════════════
+// HTTP 测速解析 & 渲染
+// ════════════════════════════════════════════
+function parseHttpSpeed(raw) {
+  const get = (key) => {
+    const m = raw.match(new RegExp(key + '=([\\d.]+)'));
+    return m ? parseFloat(m[1]) : 0;
+  };
+  return {
+    dns:   get('dns_ms'),
+    tcp:   get('tcp_ms'),
+    tls:   get('tls_ms'),
+    ttfb:  get('ttfb_ms'),
+    total: get('total_ms'),
+    code:  (raw.match(/http_code=(\d+)/) || [,'0'])[1],
+  };
+}
+
+function renderHttpResult(outputId, results, ipVer) {
+  const el = document.getElementById(outputId);
+  el.innerHTML = '';
+  results.forEach(r => {
+    const block = document.createElement('div');
+    block.className = 'result-block';
+    if (r.error || /^ERROR/.test(r.output||'')) {
+      block.innerHTML = nodeTag(r.node_name, ipVer) +
+        `<div class="text-err" style="font-size:.83rem;padding:4px 0">${escHtml(r.output)}</div>`;
+      el.appendChild(block); return;
+    }
+    const d = parseHttpSpeed(r.output || '');
+    const code = parseInt(d.code);
+    const codeCls = code>=200&&code<300 ? 'code-ok' : code>=300&&code<400 ? 'code-rdr' : 'code-err';
+    const codeLabel = code===0 ? '连接失败' : `HTTP ${d.code}`;
+    const total = d.total || 1;
+
+    // 各阶段宽度（相对 total 百分比，最小4px）
+    const pct = v => Math.max(4, Math.round((v/total)*100));
+
+    const stages = [
+      { name:'DNS解析', val:d.dns,  cls:'bar-dns',  key:'dns' },
+      { name:'TCP连接', val:d.tcp,  cls:'bar-tcp',  key:'tcp' },
+      { name:'TLS握手', val:d.tls,  cls:'bar-tls',  key:'tls' },
+      { name:'TTFB',   val:d.ttfb, cls:'bar-ttfb', key:'ttfb'},
+      { name:'总耗时',  val:d.total,cls:'bar-total',key:'total'},
+    ];
+
+    let html = nodeTag(r.node_name, ipVer);
+    html += `<span class="http-code-badge ${codeCls}">${codeLabel}</span>`;
+    html += '<div class="http-stages">';
+    stages.forEach(s => {
+      const display = s.val > 0 ? s.val.toFixed(1)+' ms' : '--';
+      html += `<div class="http-stage-row">
+        <span class="stage-name">${s.name}</span>
+        <div class="stage-bar-wrap">
+          <div class="stage-bar ${s.cls}" style="width:${pct(s.val)}%"></div>
+        </div>
+        <span class="stage-val">${display}</span>
+      </div>`;
+    });
+    html += '</div>';
+    block.innerHTML = html;
+    el.appendChild(block);
+  });
+}
+
+// ════════════════════════════════════════════
+// 通用探测：本地节点走 /api/local/probe，
+//           远程节点走 /api/probe（分发到Agent）
+// ════════════════════════════════════════════
+async function probe(taskType, payload, selectedIds) {
+  const results = [];
+
+  // 本地节点单独请求
+  if (selectedIds.includes('local')) {
+    try {
+      const res = await fetch(API + '/api/local/probe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({task_type: taskType, ...payload}),
+      });
+      const data = await res.json();
+      results.push(...(data.results || []));
+    } catch (e) {
+      results.push({node_id:'local', node_name:'主控本机', output:'ERROR: '+e.message, error:true});
+    }
+  }
+
+  // 远程节点批量请求
+  const remoteIds = selectedIds.filter(id => id !== 'local');
+  if (remoteIds.length > 0) {
+    try {
+      const res = await fetch(API + '/api/probe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({task_type: taskType, ...payload, node_ids: remoteIds}),
+      });
+      const data = await res.json();
+      results.push(...(data.results || []));
+    } catch (e) {
+      results.push({node_id:'remote', node_name:'远程节点', output:'ERROR: '+e.message, error:true});
+    }
+  }
+
+  return results;
+}
+
+// ════════════════════════════════════════════
+// Tab1: Ping 提交
+// ════════════════════════════════════════════
+async function submitPing() {
+  const target = document.getElementById('ping-target').value.trim();
+  const count  = parseInt(document.getElementById('ping-count').value) || 4;
+  const ipVer  = parseInt(document.querySelector('input[name="ping-ver"]:checked').value);
+  const ids    = getSelectedNodes('ping-nodes');
+
+  if (!target) { alert('请输入目标域名或 IP'); return; }
+  if (ids.length === 0) { alert('请至少选择一个探测节点'); return; }
+
+  setLoading('ping-btn', true);
+  const payload = {target, count, ip_version: ipVer};
+  const results = await probe('ping', payload, ids);
+  renderPingResult('ping-output', results, ipVer);
+  showResult('ping-result');
+  setLoading('ping-btn', false);
+}
+
+// ════════════════════════════════════════════
+// Tab2: TCPing 提交
+// ════════════════════════════════════════════
+async function submitTcping() {
+  const target = document.getElementById('tcp-target').value.trim();
+  const port   = parseInt(document.getElementById('tcp-port').value) || 80;
+  const count  = parseInt(document.getElementById('tcp-count').value) || 4;
+  const ipVer  = parseInt(document.querySelector('input[name="tcp-ver"]:checked').value);
+  const ids    = getSelectedNodes('tcp-nodes');
+
+  if (!target) { alert('请输入目标域名或 IP'); return; }
+  if (ids.length === 0) { alert('请至少选择一个探测节点'); return; }
+
+  setLoading('tcp-btn', true);
+  const payload = {target, port, count, ip_version: ipVer};
+  const results = await probe('tcping', payload, ids);
+  renderTcpingResult('tcp-output', results, ipVer);
+  showResult('tcp-result');
+  setLoading('tcp-btn', false);
+}
+
+// ════════════════════════════════════════════
+// Tab3: HTTP 测速提交
+// ════════════════════════════════════════════
+async function submitHttp() {
+  const url   = document.getElementById('http-url').value.trim();
+  const ipVer = parseInt(document.querySelector('input[name="http-ver"]:checked').value);
+  const ids   = getSelectedNodes('http-nodes');
+
+  if (!url) { alert('请输入完整 URL'); return; }
+  if (ids.length === 0) { alert('请至少选择一个探测节点'); return; }
+
+  setLoading('http-btn', true);
+  const payload = {target: url, ip_version: ipVer};
+  const results = await probe('http_speed', payload, ids);
+  renderHttpResult('http-output', results, ipVer);
+  showResult('http-result');
+  setLoading('http-btn', false);
+}
+
+// ════════════════════════════════════════════
+// Tab4: IP 归属查询
+// ════════════════════════════════════════════
+async function submitIpQuery() {
+  const ip = document.getElementById('ip-target').value.trim();
+  if (!ip) { alert('请输入 IP 地址'); return; }
+
+  setLoading('ip-btn', true);
+  try {
+    const res  = await fetch(API + '/api/ip/query?ip=' + encodeURIComponent(ip));
+    const data = await res.json();
+    if (data.code !== 0) throw new Error(data.detail || '查询失败');
+    renderIpResult(data);
+    showResult('ip-result');
+  } catch (e) {
+    document.getElementById('ip-output').innerHTML =
+      `<div class="result-box text-err">ERROR: ${escHtml(e.message)}</div>`;
+    showResult('ip-result');
+  }
+  setLoading('ip-btn', false);
+}
+
+function renderIpResult(d) {
+  const isV6  = d.ip_version === 6;
+  const badge = isV6
+    ? '<span class="node-tag v6-tag">IPv6</span>'
+    : '<span class="node-tag">IPv4</span>';
+
+  const items = [
+    ['IP 地址', d.ip],
+    ['国家', d.country],
+    ['地区', d.region],
+    ['城市', d.city],
+    ['ISP', d.isp],
+    ['组织', d.org],
+    ['ASN', d.asn],
+    ['纬度', d.latitude],
+    ['经度', d.longitude],
+  ];
+
+  let html = badge + '<div class="ip-result-grid">';
+  items.forEach(([k, v]) => {
+    html += `<div class="ip-kv"><div class="k">${k}</div><div class="v">${escHtml(v ?? '—')}</div></div>`;
+  });
+  html += '</div>';
+  document.getElementById('ip-output').innerHTML = html;
+}
+</script>
+</body>
+</html>
