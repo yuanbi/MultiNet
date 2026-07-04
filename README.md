@@ -136,7 +136,7 @@ docker logs -f multinet-agent
 
 ---
 
-### 三、直接 Python 部署主控 Master（无 Docker）
+### 三、Python 部署主控 Master
 
 适用于不方便使用 Docker 的环境。
 
@@ -219,7 +219,7 @@ systemctl status multinet-master
 
 ---
 
-### 四、直接 Python 部署 Agent 节点（无 Docker）
+### 四、Python 部署 Agent 节点
 
 **系统依赖**
 
