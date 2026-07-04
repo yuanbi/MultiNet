@@ -136,7 +136,167 @@ docker logs -f multinet-agent
 
 ---
 
-## 界面预览
+### 三、直接 Python 部署主控 Master（无 Docker）
+
+适用于不方便使用 Docker 的环境。
+
+**系统依赖（Linux）**
+
+```bash
+# Debian / Ubuntu
+apt-get update && apt-get install -y iputils-ping curl
+
+# CentOS / AlmaLinux
+yum install -y iputils curl
+```
+
+**Python 环境**
+
+```bash
+# 要求 Python >= 3.11
+cd MultiNet-Master
+
+# 创建虚拟环境（推荐）
+python3 -m venv venv
+source venv/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt
+```
+
+**启动服务**
+
+```bash
+# 前台运行（测试用）
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+# 后台运行
+nohup uvicorn main:app --host 0.0.0.0 --port 8000 > multinet.log 2>&1 &
+echo $! > multinet.pid
+
+# 查看日志
+tail -f multinet.log
+
+# 停止服务
+kill $(cat multinet.pid)
+```
+
+**使用 systemd 开机自启（推荐生产环境）**
+
+```bash
+# 创建 systemd 服务文件
+cat > /etc/systemd/system/multinet-master.service << EOF
+[Unit]
+Description=MultiNet Master
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/MultiNet-Master
+ExecStart=/opt/MultiNet-Master/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启用并启动
+systemctl daemon-reload
+systemctl enable multinet-master
+systemctl start multinet-master
+
+# 查看状态
+systemctl status multinet-master
+```
+
+> 访问 `http://YOUR_IP:8000`，确保防火墙放行 8000 端口：
+> ```bash
+> ufw allow 8000/tcp   # Ubuntu
+> firewall-cmd --permanent --add-port=8000/tcp && firewall-cmd --reload  # CentOS
+> ```
+
+---
+
+### 四、直接 Python 部署 Agent 节点（无 Docker）
+
+**系统依赖**
+
+```bash
+# Debian / Ubuntu
+apt-get update && apt-get install -y iputils-ping curl
+
+# CentOS / AlmaLinux
+yum install -y iputils curl
+```
+
+**Python 环境**
+
+```bash
+cd MultiNet-Agent
+
+python3 -m venv venv
+source venv/bin/activate
+
+# Agent 只依赖 websockets
+pip install websockets==12.0
+```
+
+**修改连接配置**（编辑 `agent.py` 顶部两处）
+
+```python
+# agent.py 第 14~15 行
+MASTER_WS = "ws://YOUR_MASTER_IP:8000/ws/agent"   # ← 改为主控公网 IP
+NODE_NAME  = "节点-香港-阿里云"                     # ← 改为自定义节点名
+```
+
+**启动节点**
+
+```bash
+# 前台运行（测试）
+python3 agent.py
+
+# 后台运行
+nohup python3 agent.py > agent.log 2>&1 &
+echo $! > agent.pid
+
+# 查看日志（出现 [REGISTER] 即注册成功）
+tail -f agent.log
+
+# 停止
+kill $(cat agent.pid)
+```
+
+**使用 systemd 开机自启**
+
+```bash
+cat > /etc/systemd/system/multinet-agent.service << EOF
+[Unit]
+Description=MultiNet Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/MultiNet-Agent
+ExecStart=/opt/MultiNet-Agent/venv/bin/python3 agent.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable multinet-agent
+systemctl start multinet-agent
+
+# 查看状态
+systemctl status multinet-agent
+```
+
+> Agent 无需开放任何入站端口，仅需能访问主控 IP:8000 即可。
 
 ### Ping 延迟测试
 
@@ -285,4 +445,3 @@ ss -tlnp | grep 8000
 ## License
 
 MIT
-
